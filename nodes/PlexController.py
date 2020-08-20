@@ -44,8 +44,8 @@ class PlexListener(BaseHTTPRequestHandler):
         
         # CODE HERE
         LOGGER.info('Plex POST Recieved from {}'.format(self.client_address))
-        self.close_connection = True
-    
+        self.parent.post_handler(payload)
+        
     def PlexJSONParse(self,sBody):
         #########################################################
         # This function is a simple HTTP Post Request Parser.   #
@@ -78,6 +78,7 @@ class PlexListener(BaseHTTPRequestHandler):
 class PlexController(polyinterface.Controller):
 
     def __init__(self, polyglot):
+        self.parent = self
         self.logger = LOGGER
         self.httpService = None                          # Pointer for HTTP Service.
         self.logger.info('Initializing Plex Webhook Polyglot...')
@@ -91,6 +92,11 @@ class PlexController(polyinterface.Controller):
         self.logger.info('Starting Plex Webhook Polyglot...')
         self.setDriver('ST', 1)
         self.logger.debug('ST=%s',self.getDriver('ST'))
+
+        # Get a handler and set parent to myself, so we can process the POST requests.
+        handle = PlexListener
+        handle.parent = self
+
         # Start the HTTP Service to Listen for POSTs from PMS. 
         self.httpService = HTTPServer(('192.168.2.15', 9090), PlexListener)
         self.thread  = Thread(target=self.httpService.serve_forever)
@@ -98,11 +104,14 @@ class PlexController(polyinterface.Controller):
         self.thread.daemon = True
         self.thread.start()
         
-        self.setDriver('GPV', '192.168.2.15')
+        self.setDriver('GV0', 'Server IP: 192.168.2.15')
         # httpService.serve_forever() # I do not think this is needed as the Polyglot will run.
         self.poly.add_custom_config_docs("<b>This is some custom config docs data. CH</b>")
         #self.heartbeat()
         return True
+
+    def post_handler(self,payload):
+        self.logger.debug('Post Handler Passed {}.'.format(type(payload)))
 
     def longPoll(self):
         if self.thread.is_alive(): self.logger.info('longPoll - All Good')
@@ -122,5 +131,5 @@ class PlexController(polyinterface.Controller):
 
     drivers = [
         {'driver': 'ST', 'value': 0, 'uom': 2},
-        {'driver': 'GPV', 'value': '', 'uom': 56}, 
+        {'driver': 'GV0', 'value': '', 'uom': 56}, 
     ]
