@@ -9,6 +9,7 @@ except ImportError:
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
 #from nodes import PlexClientNode
+from threading import Thread
 import json
 import sys
 
@@ -24,15 +25,17 @@ class PlexListener(BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b'This service is only to receive Plex WebHooks')
+        LOGGER.info('HTTP GET Recieved on {} from {}'.format(self.server.server_address,self.client_address))
+
     
     def do_POST(self):
-        
+        LOGGER.info('testing-POST')
         # Read in the POST message body in bytes
         content_length = int(self.headers['Content-Length'])
         body = self.rfile.read(content_length) 
 
         # Parse/Convert Body into Dict, looking for Plex JSON/event data only.
-        payload = PlexJSONParse(body)
+        payload = self.PlexJSONParse(body)
 
         # If not from Plex parser will return NONE, then ignore POST.
         if payload == None: 
@@ -40,9 +43,10 @@ class PlexListener(BaseHTTPRequestHandler):
             return  
         
         # CODE HERE
-        LOGGER.info('Plex POST Recieved from {}'.format("TEMP-IPHERE"))
+        LOGGER.info('Plex POST Recieved from {}'.format(self.client_address))
+        self.close_connection = True
     
-    def PlexJSONParse(sBody):
+    def PlexJSONParse(self,sBody):
         #########################################################
         # This function is a simple HTTP Post Request Parser.   #
         # If the POST includes JSON and contains a key "event"  #
@@ -73,40 +77,46 @@ class PlexListener(BaseHTTPRequestHandler):
 # Main UDI Polyglot Controller
 class PlexController(polyinterface.Controller):
 
-    # Pointer to the HTTP.
-    httpService = None
-
     def __init__(self, polyglot):
+        self.logger = LOGGER
+        self.httpService = None                          # Pointer for HTTP Service.
+        self.logger.info('Initializing Plex Webhook Polyglot...')
         super(PlexController, self).__init__(polyglot)
         self.name = 'Plex Webhook Listener'
+        #self.address = 'udiplexpoly'
+        #self.primary = self.address
 
     def start(self):
-        # Open the server.json file and collect the data within it. 
-        with open('server.json') as data:
-            SERVERDATA = json.load(data)
-            data.close()
-        try:
-            VERSION = SERVERDATA['credits'][0]['version']
-            LOGGER.info('Plex Poly Version {} found.'.format(VERSION))
-        except (KeyError, ValueError):
-            LOGGER.info('Plex Poly Version not found in server.json.')
-            VERSION = '0.0.0'
-
         # Show values on startup if desired.
-        LOGGER.info('Started Plex NodeServer {}'.format(VERSION))
+        self.logger.info('Starting Plex Webhook Polyglot...')
         self.setDriver('ST', 1)
-        LOGGER.debug('ST=%s',self.getDriver('ST'))
+        self.logger.debug('ST=%s',self.getDriver('ST'))
         # Start the HTTP Service to Listen for POSTs from PMS. 
-        self.httpService = HTTPServer(('192.168.2.15', 90), PlexListener)
+        self.httpService = HTTPServer(('192.168.2.15', 9090), PlexListener)
+        self.thread  = Thread(target=self.httpService.serve_forever)
+        self.thread.name = 'PlexListener'
+        self.thread.daemon = True
+        self.thread.start()
+        
         self.setDriver('GPV', '192.168.2.15')
         # httpService.serve_forever() # I do not think this is needed as the Polyglot will run.
         self.poly.add_custom_config_docs("<b>This is some custom config docs data. CH</b>")
+        #self.heartbeat()
+        return True
+
+    def longPoll(self):
+        if self.thread.is_alive(): self.logger.info('longPoll - All Good')
+        else: self.logger.debug('longPoll - Thread closed?')
+        #self.heartbeat()
 
     def stop(self):
+        self.httpService.shutdown()
+        self.httpService.server_close()
+        if self.thread.is_alive(): self.logger.debug('Thread still alive.')
         self.httpService = None
         self.setDriver('ST', 0)
         self.setDriver('GPV', 'Stopped')
-        LOGGER.debug('Plex Webhook NodeServer stopped.')
+        self.logger.debug('Plex Webhook NodeServer stopped.')
 
     id = 'plexcontroller'
 
