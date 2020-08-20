@@ -1,0 +1,33 @@
+<nodeDefs>
+    <!-- MultiPass! PolyglotV2 Controller -->
+    <!-- controller, this must mach the id in your Controller class-->
+    <nodeDef id="controller" nls="ctl">
+        <editors />
+        <sts>
+			<st id="ST" editor="bool" />
+			<st id="GV0" editor="bool" />
+            <st id="GV1" editor="omniacount" />
+		</sts>
+        <cmds>
+            <sends />
+            <accepts>
+              <cmd id="CONNECTBL" />
+            </accepts>
+        </cmds>
+    </nodeDef>
+	<!-- BroadlinkRM Node (Device) -->
+    <nodeDef id="omniamotor" nls="omnia">
+        <editors />
+        <sts> 
+        	<st id="ST" editor="bool" />
+        </sts>
+        <cmds>
+            <sends />
+            <accepts>
+                <cmd id="BUP" />
+                <cmd id="BDOWN" />
+                <cmd id="BSTOP" />
+            </accepts>
+        </cmds>
+    </nodeDef>
+</nodeDefs>

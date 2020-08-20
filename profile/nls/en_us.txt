@@ -1,0 +1,5 @@
+# controller
+ND-controller-NAME = Plex Webhook Controller
+ND-controller-ICON = GenericCtl
+ST-ctl-ST-NAME = Plex NodeServer Online
+ST-ctl-GPV-NAME = IPAddy 
