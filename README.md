@@ -1,2 +1,2 @@
 # udi-plex-poly
-Plex NodeServer for UDI's Polyglot Platform
+Plex Webhook NodeServer for UDI's Polyglot Platform
