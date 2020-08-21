@@ -1,33 +1,25 @@
 <nodeDefs>
-    <!-- MultiPass! PolyglotV2 Controller -->
-    <!-- controller, this must mach the id in your Controller class-->
-    <nodeDef id="controller" nls="ctl">
-        <editors />
+    <!-- Plex Webhook NodeServer for PolyglotV2 -->
+    <!-- Plex Controller -->
+    <nodeDef id="plexcontroller" nls="ctl">
         <sts>
 			<st id="ST" editor="bool" />
-			<st id="GV0" editor="bool" />
-            <st id="GV1" editor="omniacount" />
+            <st id="GV0" editor="port" />
+			<st id="GV1" editor="count" />
 		</sts>
-        <cmds>
-            <sends />
-            <accepts>
-              <cmd id="CONNECTBL" />
-            </accepts>
-        </cmds>
+        <cmds />
     </nodeDef>
-	<!-- BroadlinkRM Node (Device) -->
-    <nodeDef id="omniamotor" nls="omnia">
-        <editors />
-        <sts> 
-        	<st id="ST" editor="bool" />
-        </sts>
-        <cmds>
-            <sends />
-            <accepts>
-                <cmd id="BUP" />
-                <cmd id="BDOWN" />
-                <cmd id="BSTOP" />
-            </accepts>
-        </cmds>
+    <!-- node/client -->
+    <nodeDef id="plexclient" nls="plexcl">
+        <sts>
+			<st id="ST" editor="bool" />
+			<st id="GV0" editor="count" />
+            <st id="GV1" editor="plexevent" />
+            <st id="GV2" editor="plexlib" />
+            <st id="GV3" editor="plexmedia" />
+            <st id="GV4" editor="plexrate" />
+            <st id="GV5" editor="bool" />
+		</sts>
+        <cmds />
     </nodeDef>
 </nodeDefs>

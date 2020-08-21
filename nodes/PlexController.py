@@ -8,10 +8,12 @@ except ImportError:
     import pgc_interface as polyinterface
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
-#from nodes import PlexClientNode
 from threading import Thread
 import json
 import sys
+
+# Grab Plex Client Def.
+from .PlexClientNode import PlexClient
 
 # Create a LOGGER to Polyglot.
 LOGGER = polyinterface.LOGGER
@@ -25,11 +27,11 @@ class PlexListener(BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b'This service is only to receive Plex WebHooks')
-        LOGGER.info('HTTP GET Recieved on {} from {}'.format(self.server.server_address,self.client_address))
+        self.parent.logger.info('HTTP GET Recieved on {} from {}'.format(self.server.server_address,self.client_address))
 
     
     def do_POST(self):
-        LOGGER.info('testing-POST')
+        self.parent.logger.info('testing-POST')
         # Read in the POST message body in bytes
         content_length = int(self.headers['Content-Length'])
         body = self.rfile.read(content_length) 
@@ -39,19 +41,20 @@ class PlexListener(BaseHTTPRequestHandler):
 
         # If not from Plex parser will return NONE, then ignore POST.
         if payload == None: 
-            LOGGER.info('Invalid-Plex POST Recieved and Ignored.')
+            self.parent.logger.info('Non-Plex POST Recieved and Ignored.')
             return  
         
         # CODE HERE
-        LOGGER.info('Plex POST Recieved from {}'.format(self.client_address))
-        self.parent.post_handler(payload)
+        self.parent.logger.info('Plex POST Recieved from {}'.format(self.client_address))
+        self.parent.post_handler(self.date_time_string,payload)
         
     def PlexJSONParse(self,sBody):
         #########################################################
         # This function is a simple HTTP Post Request Parser.   #
         # If the POST includes JSON and contains a key "event"  #
-        # then it assumes it is Plex Webhooks JSON data.        #
-        # If Plex JSON/event is not found returns NONE.         #
+        # then it assumes the POST is from a Plex Media Server. #
+        # If Plex JSON/event returns a dict with the data.      # 
+        # If NOT Plex JSON/event returns NONE.                  # 
         #########################################################
         try:
             # First ensure parameter was passed as a string. (In Not Convert)
@@ -78,7 +81,6 @@ class PlexListener(BaseHTTPRequestHandler):
 class PlexController(polyinterface.Controller):
 
     def __init__(self, polyglot):
-        self.parent = self
         self.logger = LOGGER
         self.httpService = None                          # Pointer for HTTP Service.
         self.logger.info('Initializing Plex Webhook Polyglot...')
@@ -96,40 +98,66 @@ class PlexController(polyinterface.Controller):
         # Get a handler and set parent to myself, so we can process the POST requests.
         handle = PlexListener
         handle.parent = self
-
-        # Start the HTTP Service to Listen for POSTs from PMS. 
-        self.httpService = HTTPServer(('192.168.2.15', 9090), PlexListener)
+        port = 9090
+        # Start the HTTP Service to Listen for POSTs from a Plex Media Server.
+        # When a valid post is recieved the PlexListener will call post_handler() below.
+        self.httpService = HTTPServer(('192.168.2.15', port), PlexListener)
         self.thread  = Thread(target=self.httpService.serve_forever)
         self.thread.name = 'PlexListener'
         self.thread.daemon = True
         self.thread.start()
         
-        self.setDriver('GV0', 'Server IP: 192.168.2.15')
-        # httpService.serve_forever() # I do not think this is needed as the Polyglot will run.
+        self.setDriver('ST', 1)
+        self.setDriver('GV0', port)
+        
         self.poly.add_custom_config_docs("<b>This is some custom config docs data. CH</b>")
         #self.heartbeat()
         return True
 
-    def post_handler(self,payload):
+    def post_handler(self,time,payload):
+        # Called from the PlexListener(BaseHTTPRequestHandler) when PLEX/POST recieved.
+        # Passed in the Date/Time String and the Payload = Dictionary.
         self.logger.debug('Post Handler Passed {}.'.format(type(payload)))
 
+        # Identify the Plex Client from Dict (payload)
+        try: 
+            # RTrim uuid max 15 characters for polyglot.node.address
+            uuid = payload["Player"]["uuid"][-14:].lower()
+            devName = payload["Player"]["title"]
+        except: #If "Player" or "event" do not exist then ignore post. 
+            return
+
+        # Check if new client.
+        if not uuid in self.nodes:
+            self.addNode(PlexClient(self, self.address, uuid, devName, self.logger),update=True)
+            #self.logger.debug("Create Node: {}".format(uuid))
+        # Update Node with new information about current action. 
+        self.logger.debug("Existing Node: {}".format(devName))
+        self.nodes[uuid].update(payload)
+
+        # Check to see if we have heard from this client before. 
+
+            # Create New Node if not found. 
+
+        # Update Node with new information about current action. 
+        
+
     def longPoll(self):
-        if self.thread.is_alive(): self.logger.info('longPoll - All Good')
+        if self.thread.is_alive(): self.logger.debug('longPoll - All Good')
         else: self.logger.debug('longPoll - Thread closed?')
         #self.heartbeat()
 
     def stop(self):
         self.httpService.shutdown()
         self.httpService.server_close()
-        if self.thread.is_alive(): self.logger.debug('Thread still alive.')
         self.httpService = None
         self.setDriver('ST', 0)
-        self.setDriver('GPV', 'Stopped')
         self.logger.debug('Plex Webhook NodeServer stopped.')
 
     id = 'plexcontroller'
 
     drivers = [
         {'driver': 'ST', 'value': 0, 'uom': 2},
-        {'driver': 'GV0', 'value': '', 'uom': 56}, 
+        {'driver': 'GV0', 'value': 0, 'uom': 56}, 
+        {'driver': 'GV1', 'value': 0, 'uom': 56}
     ]

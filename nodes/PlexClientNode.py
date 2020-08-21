@@ -1,130 +1,117 @@
+import polyinterface
 
-try:
-    import polyinterface
-except ImportError:
-    import pgc_interface as polyinterface
-import sys
-import time
-import urllib3
+# Define Plex strings and their numerical values. 
+# pulled from Plex Webhooks https://support.plex.tv/articles/115002267687-webhooks/
+dEvents = {
+    "media.stop":0, 
+    "media.play":1, 
+    "media.pause":2, 
+    "media.resume":3, 
+    "media.rate":4, 
+    "media.scrobble":5
+    }
 
-LOGGER = polyinterface.LOGGER
+dLibraries = {
+    "movie":1, 
+    "show":1,
+    "artist":2,
+    "photo":3,
+    }
 
-class TemplateNode(polyinterface.Node):
-    """
-    This is the class that all the Nodes will be represented by. You will add this to
-    Polyglot/ISY with the controller.addNode method.
+dMediaTypes = {
+    "episode":1, 
+    "movie":2,
+    "track":3,
+    "photo":4,
+    }
 
-    Class Variables:
-    self.primary: String address of the Controller node.
-    self.parent: Easy access to the Controller Class from the node itself.
-    self.address: String address of this Node 14 character limit. (ISY limitation)
-    self.added: Boolean Confirmed added to ISY
+# These are pulled/combined from thetvdb.com and themoviedb.org
+# It will require update (numberic values must match profile-nls-en_us.txt)
+dRatings = {
+    "NR":1, "NOT RATED":1, 
+    "G":2, "TV-G":2, "ca/G":2,
+    "Y":3, "TV-Y":3, 
+    "Y7":4, "TV-Y7":4,
+    "PG":5, "TV-PG":5, "PG-13":5, "ca/13+":5, "ca/PG":5, "12":5,
+    "14":6, "TV-14":6, "ca/F":6, "ca/14":6, "ca/14A":6,
+    "MA":7, "TV-MA":7, "M+15":7, "ca/16+":7, "16":7,
+    "NC-17":8,
+    "R":9, "TV-18+":9, "ca/18A":9, "ca/R":9, "18":9
+    }
 
-    Class Methods:
-    start(): This method is called once polyglot confirms the node is added to ISY.
-    setDriver('ST', 1, report = True, force = False):
-        This sets the driver 'ST' to 1. If report is False we do not report it to
-        Polyglot/ISY. If force is True, we send a report even if the value hasn't changed.
-    reportDrivers(): Forces a full update of all drivers to Polyglot/ISY.
-    query(): Called when ISY sends a query request to Polyglot for this specific node
-    """
-    def __init__(self, controller, primary, address, name):
-        """
-        Optional.
-        Super runs all the parent class necessities. You do NOT have
-        to override the __init__ method, but if you do, you MUST call super.
+class PlexClient(polyinterface.Node):
 
-        :param controller: Reference to the Controller class
-        :param primary: Controller address
-        :param address: This nodes address
-        :param name: This nodes name
-        """
-        super(TemplateNode, self).__init__(controller, primary, address, name)
-        self.lpfx = '%s:%s' % (address,name)
-
-    def start(self):
-        """
-        Optional.
-        This method is run once the Node is successfully added to the ISY
-        and we get a return result from Polyglot. Only happens once.
-        """
-        LOGGER.debug('%s: get ST=%s',self.lpfx,self.getDriver('ST'))
-        self.setDriver('ST', 1)
-        LOGGER.debug('%s: get ST=%s',self.lpfx,self.getDriver('ST'))
-        self.setDriver('ST', 0)
-        LOGGER.debug('%s: get ST=%s',self.lpfx,self.getDriver('ST'))
-        self.setDriver('ST', 1)
-        LOGGER.debug('%s: get ST=%s',self.lpfx,self.getDriver('ST'))
-        self.setDriver('ST', 0)
-        LOGGER.debug('%s: get ST=%s',self.lpfx,self.getDriver('ST'))
-        self.http = urllib3.PoolManager()
+    def __init__(self, controller, primary, address, name, logger):
+        super().__init__(controller, primary, address, name)
+        self.ctrl = controller
+        self.pri = primary
+        self.name = name
+        self.logger = logger
+        self.postCount = 0
+        self.logger.info('Plex Client Node Created {} {}.'.format(name,address))
 
     def shortPoll(self):
-        LOGGER.debug('shortPoll')
-        if int(self.getDriver('ST')) == 1:
-            self.setDriver('ST',0)
-        else:
-            self.setDriver('ST',1)
-        LOGGER.debug('%s: get ST=%s',self.lpfx,self.getDriver('ST'))
+        self.logger.info('shortPoll')
 
     def longPoll(self):
-        LOGGER.debug('longPoll')
+        self.logger.info('longPoll')
 
-    def cmd_on(self, command):
-        """
-        Example command received from ISY.
-        Set DON on TemplateNode.
-        Sets the ST (status) driver to 1 or 'True'
-        """
-        self.setDriver('ST', 1)
+    def start(self):
+        # Load Previous Count from ISY driver. 
+        pass # If I need to do anything at start ????
 
-    def cmd_off(self, command):
-        """
-        Example command received from ISY.
-        Set DOF on TemplateNode
-        Sets the ST (status) driver to 0 or 'False'
-        """
-        self.setDriver('ST', 0)
+    def update(self,payload):
+        # Passed from controller from post_handler() 
+        # Parameter "info" should be a dictionary from the JSON/POST. 
+        self.logger.debug('Client update: {}'.format(self.name))
+        
+        # Create a list to store numerical values. [local,event,lib,type,rating]
+        parms = [] 
+        
+        try: #If any errors just ignore update. 
+            # Collect Keys provided in metadata. 
+            metakeys = payload["Metadata"].keys() if "Metadata" in payload.keys() else None
 
-    def cmd_ping(self,command):
-        """
-        Not really a ping, but don't care... It's an example to test LOGGER
-        in a module...
-        """
-        LOGGER.debug("cmd_ping:")
-        r = self.http.request('GET',"google.com")
-        LOGGER.debug("cmd_ping: r={}".format(r))
+            # Lookup in dictionaies (above) what numerical value to stored.
+            parms.append(1 if payload["Player"]["local"] == "True" else 0)
+            try: parms.append(dEvents[payload["event"]])
+            except: parms.append(0)
+            #Check for each value in Metadata incase it is not provided.
+            if metakeys != None:
+                try: parms.append(dLibraries[payload["Metadata"]["librarySectionType"]])
+                except: parms.append(0)
+                try: parms.append(dMediaTypes[payload["Metadata"]["type"]])
+                except: parms.append(0)
+                try: parms.append(dRatings[payload["Metadata"]["contentRating"]])
+                except: parms.append(0)
+            else: parms += [0,0,0] # Defaults if no Metadata section. 
 
+            # TESTING
+            self.logger.debug('Lib,Media Values: {},{}'.format(payload["Metadata"]["librarySectionType"],payload["Metadata"]["type"]))
+            # Increment the number of valid POSTs from this client and add to parms. 
+            self.postCount += 1
+            parms.append(self.postCount)
 
-    def query(self,command=None):
-        """
-        Called by ISY to report all drivers for this node. This is done in
-        the parent class, so you don't need to override this method unless
-        there is a need.
-        """
-        self.reportDrivers()
+            # Update the drivers for ISY. 
+            for id, driver in enumerate(("ST", "GV1", "GV2", "GV3", "GV4", "GV0")):
+                self.setDriver(driver, parms[id])
+            self.reportDrivers()
 
-    "Hints See: https://github.com/UniversalDevicesInc/hints"
-    hint = [1,2,3,4]
-    drivers = [{'driver': 'ST', 'value': 0, 'uom': 2}]
-    """
-    Optional.
-    This is an array of dictionary items containing the variable names(drivers)
-    values and uoms(units of measure) from ISY. This is how ISY knows what kind
-    of variable to display. Check the UOM's in the WSDK for a complete list.
-    UOM 2 is boolean so the ISY will display 'True/False'
-    """
-    id = 'templatenodeid'
-    """
-    id of the node from the nodedefs.xml that is in the profile.zip. This tells
-    the ISY what fields and commands this node has.
-    """
-    commands = {
-                    'DON': cmd_on,
-                    'DOF': cmd_off,
-                    'PING': cmd_ping
-                }
-    """
-    This is a dictionary of commands. If ISY sends a command to the NodeServer,
-    this tells it which method to call. DON calls setOn, etc.
-    """
+        except: 
+            self.logger.error('Error Parsing JSON Data, update ignored.')
+            return
+        
+        # Update the Values to ISY. 
+
+    id = 'plexclient'
+    
+    drivers = [
+        {'driver': 'ST', 'value': 0, 'uom': 2},
+        {'driver': 'GV0', 'value': 0, 'uom': 56}, 
+        {'driver': 'GV1', 'value': 0, 'uom': 25},
+        {'driver': 'GV2', 'value': 0, 'uom': 25},
+        {'driver': 'GV3', 'value': 0, 'uom': 25},
+        {'driver': 'GV4', 'value': 0, 'uom': 25},
+        {'driver': 'GV5', 'value': 0, 'uom': 2},
+    ]
+    

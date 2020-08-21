@@ -1,5 +1,51 @@
-# controller
-ND-controller-NAME = Plex Webhook Controller
-ND-controller-ICON = GenericCtl
-ST-ctl-ST-NAME = Plex NodeServer Online
-ST-ctl-GPV-NAME = IPAddy 
+# plexcontroller
+ND-plexcontroller-NAME = Plex Webhook Controller
+ND-plexcontroller-ICON = GenericCtl
+ST-ctl-ST-NAME = NodeServer Online
+ST-ctl-GV0-NAME = Listening Port
+ST-ctl-GV1-NAME = Client Count
+
+# plexclient
+ND-plexclient-NAME = Plex Client
+ND-plexclient-ICON = Input
+ST-plexcl-ST-NAME = Local Client
+ST-plexcl-GV0-NAME = Number of POSTs Received
+ST-plexcl-GV1-NAME = Last Event
+ST-plexcl-GV2-NAME = Library Type
+ST-plexcl-GV3-NAME = Media Type
+ST-plexcl-GV4-NAME = Content Rating
+ST-plexcl-GV5-NAME = Rapid Cycle
+
+# Event Types
+PLEX_EVENT-0 = Stop
+PLEX_EVENT-1 = Play
+PLEX_EVENT-2 = Pause
+PLEX_EVENT-3 = Resume
+PLEX_EVENT-4 = Rate
+PLEX_EVENT-5 = Scrobble
+
+# Library Types 
+PLEX_LIB-0 = Unknown
+PLEX_LIB-1 = Video
+PLEX_LIB-2 = Audio
+PLEX_LIB-3 = Image
+
+# Media Types
+PLEX_MEDIA-0 = Unknown
+PLEX_MEDIA-1 = TV Episode
+PLEX_MEDIA-2 = Movie
+PLEX_MEDIA-3 = Track
+PLEX_MEDIA-4 = Photo
+
+# Content Ratings
+PLEX_RATE-0 = Unknown
+PLEX_RATE-1 = NR
+PLEX_RATE-2 = G
+PLEX_RATE-3 = Y
+PLEX_RATE-4 = Y7
+PLEX_RATE-5 = PG
+PLEX_RATE-6 = 14
+PLEX_RATE-7 = MA
+PLEX_RATE-8 = NC-17
+PLEX_RATE-9 = R
+

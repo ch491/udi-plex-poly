@@ -1,6 +1,33 @@
 <editors>
+
+    <!-- Plex Controller -->
     <!-- Boolean -->
     <editor id="bool">
         <range uom="2" subset="0,1" />
     </editor>
+    <editor id="port">
+        <range uom="56" min="1024" max="65535" prec="0" step="1" />
+    </editor>
+    <editor id="count">
+        <range uom="56" min="0" max="4294967296" prec="0" step="1" />
+    </editor>
+    
+    <!-- Node/Media Metadata -->
+    <!-- Plex Events List -->
+    <editor id="plexevent">
+        <range uom="25" subset="0-5" nls="PLEX_EVENT" />
+    </editor>
+    <!-- Plex Library List -->
+    <editor id="plexlib">
+        <range uom="25" subset="0-3" nls="PLEX_LIB" />
+    </editor>    
+    <!-- Plex Media Type List -->
+    <editor id="plexmedia">
+        <range uom="25" subset="0-4" nls="PLEX_MEDIA" />
+    </editor>
+    <!-- Plex Content Rating List -->
+    <editor id="plexrate">
+        <range uom="25" subset="0-9" nls="PLEX_RATE" />
+    </editor>
+
 </editors>
