@@ -73,7 +73,7 @@ class PlexClient(polyinterface.Node):
             metakeys = payload["Metadata"].keys() if "Metadata" in payload.keys() else None
 
             # Lookup in dictionaies (above) what numerical value to stored.
-            parms.append(1 if payload["Player"]["local"] == "True" else 0)
+            parms.append(1 if payload["Player"]["local"] else 0)
             try: parms.append(dEvents[payload["event"]])
             except: parms.append(0)
             #Check for each value in Metadata incase it is not provided.
@@ -88,6 +88,7 @@ class PlexClient(polyinterface.Node):
 
             # TESTING
             self.logger.debug('Lib,Media Values: {},{}'.format(payload["Metadata"]["librarySectionType"],payload["Metadata"]["type"]))
+            self.logger.debug('Lib,Media Numbers: {},{}'.format(dLibraries[payload["Metadata"]["librarySectionType"]],dMediaTypes[payload["Metadata"]["type"]]))
             # Increment the number of valid POSTs from this client and add to parms. 
             self.postCount += 1
             parms.append(self.postCount)

@@ -8,6 +8,7 @@ except ImportError:
     import pgc_interface as polyinterface
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from socket import socket,AF_INET,SOCK_DGRAM
 from threading import Thread
 import json
 import sys
@@ -98,31 +99,50 @@ class PlexController(polyinterface.Controller):
         # Get a handler and set parent to myself, so we can process the POST requests.
         handle = PlexListener
         handle.parent = self
-        port = 9090
+
+        # Retrieve Local IP and from Custom Parameters Port
+        self.myip = self.get_poly_ip('8.8.8.8')
+        if self.myip == None: 
+            self.logger.error('Failed to Start Plex Webhook Polyglot. No IP to bind too.')
+            return # If no IP to bind to exit start. 
+        self.port = 9090
+
         # Start the HTTP Service to Listen for POSTs from a Plex Media Server.
         # When a valid post is recieved the PlexListener will call post_handler() below.
-        self.httpService = HTTPServer(('192.168.2.15', port), PlexListener)
+        self.httpService = HTTPServer((self.myip, self.port), PlexListener)
         self.thread  = Thread(target=self.httpService.serve_forever)
         self.thread.name = 'PlexListener'
         self.thread.daemon = True
         self.thread.start()
+        self.logger.info('Successfully Started Polyglot Listener.')
+        self.logger.info('Set you PMS Webhook URL to: http://{}:{}'.format(self.myip,self.port))
         
         self.setDriver('ST', 1)
-        self.setDriver('GV0', port)
+        self.setDriver('GV0', self.port)
         
         self.poly.add_custom_config_docs("<b>This is some custom config docs data. CH</b>")
         #self.heartbeat()
         return True
 
+    def get_poly_ip(self,rhost):
+        try:
+            s = socket(AF_INET, SOCK_DGRAM)
+            s.connect((rhost, 80))
+            rt = s.getsockname()[0]
+        except Exception as err:
+            rt = None
+        finally:
+            s.close()
+        return rt
+    
     def post_handler(self,time,payload):
         # Called from the PlexListener(BaseHTTPRequestHandler) when PLEX/POST recieved.
         # Passed in the Date/Time String and the Payload = Dictionary.
-        self.logger.debug('Post Handler Passed {}.'.format(type(payload)))
-
+        
         # Identify the Plex Client from Dict (payload)
         try: 
             # RTrim uuid max 15 characters for polyglot.node.address
-            uuid = payload["Player"]["uuid"][-14:].lower()
+            uuid = payload["Player"]["uuid"][-14:].replace("-","").lower()
             devName = payload["Player"]["title"]
         except: #If "Player" or "event" do not exist then ignore post. 
             return
@@ -130,17 +150,8 @@ class PlexController(polyinterface.Controller):
         # Check if new client.
         if not uuid in self.nodes:
             self.addNode(PlexClient(self, self.address, uuid, devName, self.logger),update=True)
-            #self.logger.debug("Create Node: {}".format(uuid))
         # Update Node with new information about current action. 
-        self.logger.debug("Existing Node: {}".format(devName))
         self.nodes[uuid].update(payload)
-
-        # Check to see if we have heard from this client before. 
-
-            # Create New Node if not found. 
-
-        # Update Node with new information about current action. 
-        
 
     def longPoll(self):
         if self.thread.is_alive(): self.logger.debug('longPoll - All Good')
@@ -152,6 +163,7 @@ class PlexController(polyinterface.Controller):
         self.httpService.server_close()
         self.httpService = None
         self.setDriver('ST', 0)
+        self.setDriver('GV0', 0)
         self.logger.debug('Plex Webhook NodeServer stopped.')
 
     id = 'plexcontroller'
