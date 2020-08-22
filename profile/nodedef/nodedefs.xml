@@ -6,6 +6,7 @@
 			<st id="ST" editor="bool" />
             <st id="GV0" editor="port" />
 			<st id="GV1" editor="count" />
+            <st id="GV2" editor="trigger" />
 		</sts>
         <cmds />
     </nodeDef>
@@ -20,6 +21,11 @@
             <st id="GV4" editor="plexrate" />
             <st id="GV5" editor="bool" />
 		</sts>
-        <cmds />
+        <cmds>
+            <sends />
+            <accepts>
+                <cmd id="RESET" />
+            </accepts>
+        </cmds>
     </nodeDef>
 </nodeDefs>

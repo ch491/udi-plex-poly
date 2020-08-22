@@ -1,4 +1,12 @@
-import polyinterface
+'''
+PlexClient Node used by PlexController
+'''
+try:
+    import polyinterface
+except ImportError:
+    import pgc_interface as polyinterface
+
+from datetime import datetime, timedelta
 
 # Define Plex strings and their numerical values. 
 # pulled from Plex Webhooks https://support.plex.tv/articles/115002267687-webhooks/
@@ -26,7 +34,7 @@ dMediaTypes = {
     }
 
 # These are pulled/combined from thetvdb.com and themoviedb.org
-# It will require update (numberic values must match profile-nls-en_us.txt)
+# If update required numberic values must match profile/nls-en/us.txt.
 dRatings = {
     "NR":1, "NOT RATED":1, 
     "G":2, "TV-G":2, "ca/G":2,
@@ -41,35 +49,42 @@ dRatings = {
 
 class PlexClient(polyinterface.Node):
 
-    def __init__(self, controller, primary, address, name, logger):
+    def __init__(self, controller, primary, address, name, logger, rapid_trigger):
         super().__init__(controller, primary, address, name)
         self.ctrl = controller
         self.pri = primary
         self.name = name
         self.logger = logger
         self.postCount = 0
+        self.lastPost = datetime.now()
+        self.rapidFlag = False
+        self.rapid_trigger = rapid_trigger
         self.logger.info('Plex Client Node Created {} {}.'.format(name,address))
 
-    def shortPoll(self):
-        self.logger.info('shortPoll')
-
-    def longPoll(self):
-        self.logger.info('longPoll')
-
     def start(self):
-        # Load Previous Count from ISY driver. 
-        pass # If I need to do anything at start ????
+        # Load Previous postCount from ISY GV5 driver and reset rapidFlag. 
+        gv5 = self.getDriver('GV5')
+        if gv5 != None: self.postCount = int(self.getDriver('GV5'))
+        self.rapidFlag = False
+        self.setDriver("GV5",0)
 
-    def update(self,payload):
-        # Passed from controller from post_handler() 
-        # Parameter "info" should be a dictionary from the JSON/POST. 
-        self.logger.debug('Client update: {}'.format(self.name))
+    def resetFlag(self):
+        # Reset the Flag called by PlexController.shortPoll()
+        if self.rapidFlag:
+            self.rapidFlag = False
+            self.setDriver("GV5",0) 
+
+    def update(self,time,payload):
+        self.logger.debug('Time from POST {}'.format(time))
+        # Called from controller.post_handler() 
+        # Parameter "payload" must be a dictionary from the JSON/POST. 
+        self.logger.debug('Client update from: {}'.format(self.name))
         
         # Create a list to store numerical values. [local,event,lib,type,rating]
         parms = [] 
         
-        try: #If any errors just ignore update. 
-            # Collect Keys provided in metadata. 
+        try: #If any errors just ignore post/update. 
+            # Collect Keys provided in metadata subset of payload. 
             metakeys = payload["Metadata"].keys() if "Metadata" in payload.keys() else None
 
             # Lookup in dictionaies (above) what numerical value to stored.
@@ -86,9 +101,10 @@ class PlexClient(polyinterface.Node):
                 except: parms.append(0)
             else: parms += [0,0,0] # Defaults if no Metadata section. 
 
-            # TESTING
-            self.logger.debug('Lib,Media Values: {},{}'.format(payload["Metadata"]["librarySectionType"],payload["Metadata"]["type"]))
-            self.logger.debug('Lib,Media Numbers: {},{}'.format(dLibraries[payload["Metadata"]["librarySectionType"]],dMediaTypes[payload["Metadata"]["type"]]))
+            # ---------------------------  Saved for Beta Testing --------------------------------
+            #self.logger.debug('Lib,Media Values: {},{}'.format(payload["Metadata"]["librarySectionType"],payload["Metadata"]["type"]))
+            #self.logger.debug('Lib,Media Numbers: {},{}'.format(dLibraries[payload["Metadata"]["librarySectionType"]],dMediaTypes[payload["Metadata"]["type"]]))
+            
             # Increment the number of valid POSTs from this client and add to parms. 
             self.postCount += 1
             parms.append(self.postCount)
@@ -99,13 +115,38 @@ class PlexClient(polyinterface.Node):
             self.reportDrivers()
 
         except: 
-            self.logger.error('Error Parsing JSON Data, update ignored.')
+            self.logger.error('Error Parsing JSON Data from {}, update ignored.'.format(self.name))
             return
-        
-        # Update the Values to ISY. 
+                
+        ###########################################################################################
+        #     If all goes well with update then check for Rapid changes in client status.         #
+        #  This feature was requested to monitor if thier kids are pushing play/pause repeatedly. #
+        ###########################################################################################
+        if self.rapid_trigger != 0:
+            # Convert Time string format "Sat, 22 Aug 2020 14:26:29 GMT" into System Date.
+            newPost = datetime.strptime(time,'%a, %d %b %Y %H:%M:%S %Z')
+
+            # Compare time to previous time if less then self.rapid_trigger between POSTs then raise rapidFlag.  
+            delta = newPost - self.lastPost
+            if delta <= timedelta(seconds=self.rapid_trigger):
+                # If second rapidFlag is raise then set ISY Node.GV5 to True.
+                if self.rapidFlag: self.setDriver("GV5", 1) 
+                else: self.rapidFlag = True         # First rapidFlag
+            # Store current post as the last POST received.
+            self.lastPost = newPost 
+
+    def reset_values(self,command):
+        self.postcount = 0
+        self.rapidFlag = False
+        self.lastPost = datetime.now()
+        self.setDriver("GV5",0)
+        parms = [0,0,0,0,0,0] # Reset All Metadata fields.
+        for id, driver in enumerate(("ST", "GV1", "GV2", "GV3", "GV4", "GV0")):
+            self.setDriver(driver, parms[id])
+        self.reportDrivers()
 
     id = 'plexclient'
-    
+
     drivers = [
         {'driver': 'ST', 'value': 0, 'uom': 2},
         {'driver': 'GV0', 'value': 0, 'uom': 56}, 
@@ -115,4 +156,6 @@ class PlexClient(polyinterface.Node):
         {'driver': 'GV4', 'value': 0, 'uom': 25},
         {'driver': 'GV5', 'value': 0, 'uom': 2},
     ]
+
+    commands = { 'RESET': reset_values }
     

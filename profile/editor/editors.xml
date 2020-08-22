@@ -11,6 +11,9 @@
     <editor id="count">
         <range uom="56" min="0" max="4294967296" prec="0" step="1" />
     </editor>
+    <editor id="trigger">
+        <range uom="58" min="0" max="6000" prec="0" step="1" />
+    </editor>
     
     <!-- Node/Media Metadata -->
     <!-- Plex Events List -->

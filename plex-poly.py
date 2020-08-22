@@ -16,9 +16,10 @@ if __name__ == "__main__":
         # Instantiate and Start the Interface to Polyglot & Plex Controller.
         polyglot = polyinterface.Interface('udi-plex-poly')
         polyglot.start()
+        
         # Creates the Controller Node and passes in the Interface
-        control = PlexController(polyglot)
-        LOGGER.error("c={}".format(control))    
+        control = PlexController(polyglot,LOGGER)
+        
         # Sit around and do nothing forever, keeping your program running.
         control.runForever()
         

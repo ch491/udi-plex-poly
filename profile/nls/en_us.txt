@@ -4,10 +4,12 @@ ND-plexcontroller-ICON = GenericCtl
 ST-ctl-ST-NAME = NodeServer Online
 ST-ctl-GV0-NAME = Listening Port
 ST-ctl-GV1-NAME = Client Count
+ST-ctl-GV2-NAME = Rapid Tigger
 
 # plexclient
 ND-plexclient-NAME = Plex Client
 ND-plexclient-ICON = Input
+CMD-plexcl-RESET-NAME = Reset Values
 ST-plexcl-ST-NAME = Local Client
 ST-plexcl-GV0-NAME = Number of POSTs Received
 ST-plexcl-GV1-NAME = Last Event
