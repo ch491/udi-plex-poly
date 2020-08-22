@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
 PlexClient Node used by PlexController
 '''
@@ -75,16 +76,15 @@ class PlexClient(polyinterface.Node):
             self.setDriver("GV5",0) 
 
     def update(self,time,payload):
-        self.logger.debug('Time from POST {}'.format(time))
         # Called from controller.post_handler() 
         # Parameter "payload" must be a dictionary from the JSON/POST. 
-        self.logger.debug('Client update from: {}'.format(self.name))
+        self.logger.info('Client update from: {}'.format(self.name))
         
         # Create a list to store numerical values. [local,event,lib,type,rating]
         parms = [] 
         
         try: #If any errors just ignore post/update. 
-            # Collect Keys provided in metadata subset of payload. 
+            # Collect Keys provided in metadata (subset of payload). 
             metakeys = payload["Metadata"].keys() if "Metadata" in payload.keys() else None
 
             # Lookup in dictionaies (above) what numerical value to stored.

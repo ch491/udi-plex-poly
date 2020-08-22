@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
 A Simple UDI Poloyglot Controller to Listen for Plex Webhooks. 
 '''

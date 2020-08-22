@@ -10,7 +10,7 @@
 		</sts>
         <cmds />
     </nodeDef>
-    <!-- node/client -->
+    <!-- node/Plex Client -->
     <nodeDef id="plexclient" nls="plexcl">
         <sts>
 			<st id="ST" editor="bool" />

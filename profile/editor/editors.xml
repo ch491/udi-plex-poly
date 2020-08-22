@@ -15,7 +15,7 @@
         <range uom="58" min="0" max="6000" prec="0" step="1" />
     </editor>
     
-    <!-- Node/Media Metadata -->
+    <!-- Node/ Plex Client Media Metadata -->
     <!-- Plex Events List -->
     <editor id="plexevent">
         <range uom="25" subset="0-5" nls="PLEX_EVENT" />
