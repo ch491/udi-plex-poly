@@ -4,7 +4,7 @@ ND-plexcontroller-ICON = GenericCtl
 ST-ctl-ST-NAME = NodeServer Online
 ST-ctl-GV0-NAME = Listening Port
 ST-ctl-GV1-NAME = Client Count
-ST-ctl-GV2-NAME = Rapid Tigger
+ST-ctl-GV2-NAME = Rapid Trigger
 
 # plexclient
 ND-plexclient-NAME = Plex Client
