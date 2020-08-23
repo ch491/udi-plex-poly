@@ -3,7 +3,11 @@
 Plex Webhooks NodeServer for UDI Polyglot v2
 by ch491 (Chad Hoevenaars) ch491@yahoo.com
 """
-import polyinterface
+try:
+    import polyinterface
+except ImportError:
+    import pgc_interface as polyinterface
+
 from sys import exit
 # Grab the Plex Controller Class Definition from .\Nodes folder.
 from nodes import PlexController
