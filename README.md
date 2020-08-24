@@ -9,9 +9,9 @@ This node server is intended to support the [Plex Media Server Webhooks](https:/
 This node server will listen for POSTs "Webhooks" from a Plex Media Server.
 1) You can create programs to react to Plex client events.
  i.e. When you start a movie change your lighting. 
-      When the movie is 90% done (Plex calls this a Scobble) you can return lights to normal. 
+      When the movie is 90% done, (Plex calls this a Scobble) you can return lights to normal. 
 2) It has a special feature 'rapid_trigger' that when on can alert you is a user is causing too many events in a given time. 
- i.e. If you have kids that think it is fun to play/pause repeatedly you can right a program to alert you. 
+ i.e. If you have kids that think it is fun to play/pause repeatedly you can write a program to alert you. 
 
 ## Installation
 
@@ -24,11 +24,11 @@ This node server will listen for POSTs "Webhooks" from a Plex Media Server.
 5. After the node server starts you can read the log or goto the Configuration Help page (on Ployglot Web Interface) to see the IP and port the nodeserver is listening on. 
 6. Goto your Plex Media Server (PMS) and under settings you will see 'Webhooks' set the URL to the path from step 5.   
 7. Then all you have to do is goto any Plex Client (Player) and cause an event. 
-8. When the node server sees any new client event it will create a Client Node in your ISY.
+8. When the node server sees any new client event, it will create a Client Node in your ISY.
 9. To remove old clients goto the Ployglot Web Interface / Plex-Webhook / Details / Nodes and you can click Delete [X] to delete that node. 
 
 ### Node Settings
-The settings for this node are:
+The settings for this node server are:
 
 #### Short Poll
    If your have turned on the rapid_trigger feature this will reset the Rapid Trigger flag to false every shortPoll.
