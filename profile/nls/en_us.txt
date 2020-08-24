@@ -9,7 +9,8 @@ ST-ctl-GV2-NAME = Rapid Trigger
 # plexclient
 ND-plexclient-NAME = Plex Client
 ND-plexclient-ICON = Input
-CMD-plexcl-RESET-NAME = Reset Values
+CMD-plexcl-RESET-NAME = Reset All Values
+CMD-plexcl-RESET_POST-NAME = Reset Post Counter
 ST-plexcl-ST-NAME = Local Client
 ST-plexcl-GV0-NAME = Number of POSTs Received
 ST-plexcl-GV1-NAME = Last Event

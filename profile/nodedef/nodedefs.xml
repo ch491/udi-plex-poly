@@ -25,6 +25,7 @@
             <sends />
             <accepts>
                 <cmd id="RESET" />
+                <cmd id="RESET_POST" />
             </accepts>
         </cmds>
     </nodeDef>

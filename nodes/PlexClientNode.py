@@ -64,10 +64,10 @@ class PlexClient(polyinterface.Node):
 
     def start(self):
         # Load Previous postCount from ISY GV5 driver and reset rapidFlag. 
-        gv5 = self.getDriver('GV5')
-        if gv5 != None: self.postCount = int(self.getDriver('GV5'))
+        gv0 = self.getDriver('GV0')
+        if gv0 != None: self.postCount = int(gv0)
         self.rapidFlag = False
-        self.setDriver("GV5",0)
+        self.setDriver("GV0",self.postCount)
 
     def resetFlag(self):
         # Reset the Flag called by PlexController.shortPoll()
@@ -136,13 +136,18 @@ class PlexClient(polyinterface.Node):
             self.lastPost = newPost 
 
     def reset_values(self,command):
-        self.postcount = 0
+        self.postCount = 0
         self.rapidFlag = False
         self.lastPost = datetime.now()
         self.setDriver("GV5",0)
         parms = [0,0,0,0,0,0] # Reset All Metadata fields.
         for id, driver in enumerate(("ST", "GV1", "GV2", "GV3", "GV4", "GV0")):
             self.setDriver(driver, parms[id])
+        self.reportDrivers()
+    
+    def reset_post_count(self,command):
+        self.postCount = 0
+        self.setDriver("GV0", self.postCount)
         self.reportDrivers()
 
     id = 'plexclient'
@@ -157,5 +162,8 @@ class PlexClient(polyinterface.Node):
         {'driver': 'GV5', 'value': 0, 'uom': 2},
     ]
 
-    commands = { 'RESET': reset_values }
+    commands = { 
+        'RESET': reset_values,
+        'RESET_POST': reset_post_count
+         }
     

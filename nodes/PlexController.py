@@ -103,7 +103,7 @@ class PlexController(polyinterface.Controller):
         # Check for Custom Parameters (port, rapid_trigger)
         if 'port' in self.polyConfig['customParams']:
             self.port = int(self.polyConfig['customParams']['port'])
-            if self.port < 1023 or self.port > 49152: 
+            if self.port < 1024 or self.port > 49151: 
                 self.logger.error('Custom Parameter: "port" must be between 1024-49151')
                 self.port = 9090
         
